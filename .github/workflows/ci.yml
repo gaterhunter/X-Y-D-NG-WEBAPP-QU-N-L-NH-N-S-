@@ -1,0 +1,29 @@
+name: HRM CI Pipeline
+
+# Luồng này sẽ chạy mỗi khi có code mới được Push lên nhánh 'main'
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # GitHub sẽ cấp cho bạn 1 máy ảo Linux miễn phí
+
+    steps:
+    - name: Lấy code từ kho lưu trữ (Checkout code)
+      uses: actions/checkout@v3
+
+    - name: Cài đặt môi trường Node.js (Setup Node.js)
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x' # Dùng phiên bản Node.js ổn định
+
+    - name: Cài đặt các thư viện (Install Dependencies)
+      run: npm install
+      working-directory: ./backend
+
+    - name: Chạy Kiểm thử (Run Tests)
+      run: npm test
+      working-directory: ./backend
