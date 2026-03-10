@@ -12,19 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Lấy code từ kho lưu trữ (Checkout code)
-      uses: actions/checkout@v3
+    - name: Lấy code từ kho lưu trữ
+      uses: actions/checkout@v4
 
-    - name: Cài đặt môi trường Node.js (Setup Node.js)
-      uses: actions/setup-node@v3
+    - name: Cài đặt môi trường Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: '20'
 
-    - name: Cài đặt các thư viện Backend (Install Dependencies)
+    - name: Cài đặt các thư viện Backend
       run: npm install
       working-directory: ./backend
 
-    - name: Chạy Unit Test Backend (Run Tests)
+    - name: Chạy Unit Test Backend
       run: npm test
       working-directory: ./backend
 
@@ -47,14 +47,24 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ci_password
+      DB_NAME: hr_management
+      JWT_SECRET: ci_test_secret
+      JWT_EXPIRES_IN: 8h
+      PORT: 5000
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+    steps:
+    - name: Lấy code từ kho lưu trữ
+      uses: actions/checkout@v4
+
+    - name: Cài đặt môi trường Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
+        node-version: '20'
 
     - name: Cài đặt thư viện Backend
       run: npm install
@@ -71,28 +81,29 @@ jobs:
     - name: Tạo dữ liệu mẫu (Seed Database)
       run: node seed.js
       working-directory: ./backend
-      env:
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_USER: root
-        DB_PASSWORD: ci_password
-        DB_NAME: hr_management
-        JWT_SECRET: ci_test_secret
-        JWT_EXPIRES_IN: 8h
+
+    - name: Khởi động Backend Server
+      run: node server.js &
+      working-directory: ./backend
+
+    - name: Khởi động Frontend Dev Server
+      run: npm run dev &
+      working-directory: ./frontend
+
+    - name: Chờ cả 2 server sẵn sàng
+      run: |
+        echo "Đợi Backend (port 5000)..."
+        timeout 30 bash -c 'until curl -sf http://localhost:5000 > /dev/null 2>&1; do sleep 1; done'
+        echo "✅ Backend sẵn sàng!"
+        echo "Đợi Frontend (port 3000)..."
+        timeout 30 bash -c 'until curl -sf http://localhost:3000 > /dev/null 2>&1; do sleep 1; done'
+        echo "✅ Frontend sẵn sàng!"
 
     - name: Chạy E2E Tests (Playwright)
       run: npx playwright test
       working-directory: ./frontend
       env:
         CI: true
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_USER: root
-        DB_PASSWORD: ci_password
-        DB_NAME: hr_management
-        JWT_SECRET: ci_test_secret
-        JWT_EXPIRES_IN: 8h
-        PORT: 5000
 
     - name: Upload test report nếu lỗi
       if: failure()

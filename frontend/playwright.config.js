@@ -12,16 +12,21 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },
   ],
-  webServer: [
-    {
-      command: 'node ../backend/server.js',
-      port: 5000,
-      reuseExistingServer: !process.env.CI,
-    },
-    {
-      command: 'npm run dev',
-      port: 3000,
-      reuseExistingServer: !process.env.CI,
-    },
-  ],
+
+  // Trên CI: workflow tự khởi động servers → không cần webServer
+  // Trên local: Playwright tự khởi động cả 2 server
+  webServer: process.env.CI
+    ? undefined
+    : [
+        {
+          command: 'node ../backend/server.js',
+          port: 5000,
+          reuseExistingServer: true,
+        },
+        {
+          command: 'npm run dev',
+          port: 3000,
+          reuseExistingServer: true,
+        },
+      ],
 });
