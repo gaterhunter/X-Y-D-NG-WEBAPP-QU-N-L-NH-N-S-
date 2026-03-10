@@ -6,13 +6,20 @@ require('dotenv').config();
 
 async function seed() {
   // Kết nối MySQL không chỉ định database (để tạo DB nếu chưa có)
-  const connection = await mysql.createConnection({
+  const connectionConfig = {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     multipleStatements: true,
-  });
+  };
+
+  // Cloud MySQL (TiDB) yêu cầu SSL
+  if (process.env.DB_SSL === 'true') {
+    connectionConfig.ssl = { rejectUnauthorized: true };
+  }
+
+  const connection = await mysql.createConnection(connectionConfig);
 
   console.log('Đã kết nối MySQL thành công!');
 
