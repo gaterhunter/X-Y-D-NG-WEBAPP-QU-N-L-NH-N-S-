@@ -1,0 +1,38 @@
+# ============================================
+# Render Blueprint – Triển khai Backend API
+# ============================================
+# Render sẽ đọc file này để tự động tạo dịch vụ web.
+# Sau khi kết nối repo GitHub, vào Dashboard Render chọn
+# "New > Blueprint" rồi trỏ về repo này.
+#
+# CÁC BIẾN MÔI TRƯỜNG cần cài đặt thủ công trên Render Dashboard:
+#   DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSL
+#   JWT_SECRET, JWT_EXPIRES_IN
+#   FRONTEND_URL (URL Vercel, vd: https://hrm-nhansu.vercel.app)
+# ============================================
+
+services:
+  - type: web
+    name: hrm-backend
+    runtime: node
+    region: singapore         # Gần Việt Nam nhất
+    plan: free                # Gói miễn phí
+
+    # Thư mục gốc của backend
+    rootDir: backend
+
+    # Lệnh build (cài thư viện)
+    buildCommand: npm install
+
+    # Lệnh khởi chạy server
+    startCommand: node server.js
+
+    # Biến môi trường mặc định (các giá trị nhạy cảm đặt trên Dashboard)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"        # Render gán port mặc định là 10000
+
+    # Kiểm tra sức khỏe - Render sẽ ping endpoint này
+    healthCheckPath: /

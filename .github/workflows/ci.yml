@@ -1,4 +1,4 @@
-name: HRM CI Pipeline
+name: HRM CI/CD Pipeline
 
 on:
   push:
@@ -100,3 +100,53 @@ jobs:
       with:
         name: playwright-report
         path: frontend/test-results/
+
+  # ==========================================================
+  # Job 3: CD – Triển khai Backend lên Render
+  # ==========================================================
+  # Render cung cấp Deploy Hook URL để kích hoạt deploy từ bên ngoài.
+  # Chỉ chạy khi push vào main (không chạy với Pull Request).
+  # Cần tạo secret RENDER_DEPLOY_HOOK_URL trên GitHub repo.
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: e2e-test                       # Chỉ deploy khi test pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: 🚀 Triển khai Backend lên Render
+      run: |
+        echo "Đang gửi yêu cầu deploy tới Render..."
+        curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        echo "✅ Đã gửi yêu cầu deploy Backend thành công!"
+
+  # ==========================================================
+  # Job 4: CD – Triển khai Frontend lên Vercel
+  # ==========================================================
+  # Sử dụng Vercel CLI để build và deploy trực tiếp.
+  # Cần tạo 3 secrets trên GitHub repo:
+  #   VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: e2e-test                       # Chỉ deploy khi test pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Lấy code từ kho lưu trữ
+      uses: actions/checkout@v3
+
+    - name: Cài đặt Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: Cài đặt Vercel CLI
+      run: npm install -g vercel
+
+    - name: 🚀 Triển khai Frontend lên Vercel (Production)
+      run: |
+        echo "Đang deploy Frontend lên Vercel..."
+        vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+      working-directory: ./frontend
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+// Khi deploy production: VITE_API_URL = https://hrm-backend-xxx.onrender.com/api
+// Khi dev local: dùng proxy nên chỉ cần '/api'
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 // Tự động gắn token vào mọi request
