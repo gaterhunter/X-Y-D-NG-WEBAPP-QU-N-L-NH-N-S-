@@ -96,8 +96,10 @@ jobs:
         timeout 30 bash -c 'until curl -sf http://localhost:5000 > /dev/null 2>&1; do sleep 1; done'
         echo "✅ Backend sẵn sàng!"
         echo "Đợi Frontend (port 3000)..."
-        timeout 30 bash -c 'until curl -sf http://localhost:3000 > /dev/null 2>&1; do sleep 1; done'
+        timeout 60 bash -c 'until curl -sf http://localhost:3000 > /dev/null 2>&1; do sleep 1; done'
         echo "✅ Frontend sẵn sàng!"
+        sleep 3
+        echo "✅ Sẵn sàng chạy E2E test!"
 
     - name: Chạy E2E Tests (Playwright)
       run: npx playwright test

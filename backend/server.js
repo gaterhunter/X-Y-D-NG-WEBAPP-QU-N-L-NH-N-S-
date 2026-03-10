@@ -10,14 +10,13 @@ const leaveRoutes = require('./routes/leaves');
 const app = express();
 
 // Middleware
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',')
-  : ['http://localhost:3000'];
+// Production: chỉ cho phép domain cụ thể (FRONTEND_URL)
+// Dev/CI: mở hoàn toàn
+const corsOptions = process.env.FRONTEND_URL
+  ? { origin: process.env.FRONTEND_URL.split(','), credentials: true }
+  : {};
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
