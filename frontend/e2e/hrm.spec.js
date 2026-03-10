@@ -79,7 +79,7 @@ test.describe('Xin nghỉ phép (Employee)', () => {
 
     // Đơn mới phải xuất hiện trong danh sách với trạng thái "Chờ duyệt"
     await expect(page.getByRole('cell', { name: 'E2E Test - Nghỉ phép tự động' }).first()).toBeVisible();
-    await expect(page.getByText('Chờ duyệt')).toBeVisible();
+    await expect(page.getByText('Chờ duyệt').first()).toBeVisible();
   });
 });
 
