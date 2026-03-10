@@ -1,6 +1,5 @@
 name: HRM CI Pipeline
 
-# Luồng này sẽ chạy mỗi khi có code mới được Push lên nhánh 'main'
 on:
   push:
     branches: [ "main" ]
@@ -8,8 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest # GitHub sẽ cấp cho bạn 1 máy ảo Linux miễn phí
+  # ===== Job 1: Unit Test Backend =====
+  unit-test:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Lấy code từ kho lưu trữ (Checkout code)
@@ -18,12 +18,85 @@ jobs:
     - name: Cài đặt môi trường Node.js (Setup Node.js)
       uses: actions/setup-node@v3
       with:
-        node-version: '18.x' # Dùng phiên bản Node.js ổn định
+        node-version: '18.x'
 
-    - name: Cài đặt các thư viện (Install Dependencies)
+    - name: Cài đặt các thư viện Backend (Install Dependencies)
       run: npm install
       working-directory: ./backend
 
-    - name: Chạy Kiểm thử (Run Tests)
+    - name: Chạy Unit Test Backend (Run Tests)
       run: npm test
       working-directory: ./backend
+
+  # ===== Job 2: E2E Test Frontend =====
+  e2e-test:
+    runs-on: ubuntu-latest
+    needs: unit-test
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_password
+          MYSQL_DATABASE: hr_management
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: Cài đặt thư viện Backend
+      run: npm install
+      working-directory: ./backend
+
+    - name: Cài đặt thư viện Frontend
+      run: npm install
+      working-directory: ./frontend
+
+    - name: Cài đặt Playwright Browsers
+      run: npx playwright install chromium --with-deps
+      working-directory: ./frontend
+
+    - name: Tạo dữ liệu mẫu (Seed Database)
+      run: node seed.js
+      working-directory: ./backend
+      env:
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASSWORD: ci_password
+        DB_NAME: hr_management
+        JWT_SECRET: ci_test_secret
+        JWT_EXPIRES_IN: 8h
+
+    - name: Chạy E2E Tests (Playwright)
+      run: npx playwright test
+      working-directory: ./frontend
+      env:
+        CI: true
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASSWORD: ci_password
+        DB_NAME: hr_management
+        JWT_SECRET: ci_test_secret
+        JWT_EXPIRES_IN: 8h
+        PORT: 5000
+
+    - name: Upload test report nếu lỗi
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: frontend/test-results/
