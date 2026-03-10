@@ -1,4 +1,4 @@
-name: HRM CI/CD Pipeline
+name: HRM CD Pipeline (Triển khai tự động)
 
 # Kích hoạt tự động khi có code mới đẩy lên nhánh main
 on:
