@@ -6,6 +6,9 @@ import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import DepartmentsPage from './pages/DepartmentsPage';
 import LeavesPage from './pages/LeavesPage';
+import ProfilePage from './pages/ProfilePage';
+import ContractsPage from './pages/ContractsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -21,6 +24,9 @@ export default function App() {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="departments" element={<DepartmentsPage />} />
         <Route path="leaves" element={<LeavesPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="contracts" element={<ContractsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
       </Route>
     </Routes>
   );

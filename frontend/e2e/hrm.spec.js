@@ -55,7 +55,7 @@ test.describe('Xin nghỉ phép (Employee)', () => {
   test.beforeEach(async ({ page }) => {
     // Đăng nhập bằng tài khoản Employee
     await page.goto('/login');
-    await page.getByPlaceholder('you@company.com').fill('cuong@company.com');
+    await page.getByPlaceholder('you@company.com').fill('dung@company.com');
     await page.getByPlaceholder('••••••••').fill('password123');
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();

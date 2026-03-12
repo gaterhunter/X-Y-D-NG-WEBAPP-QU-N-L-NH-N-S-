@@ -1,22 +1,40 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
-const { authenticate, authorize } = require('../middlewares/auth');
+const { authenticate, authorize, requirePermission } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// GET /api/employees — Lấy danh sách nhân viên (HR/Admin)
-router.get('/', authenticate, authorize('Admin', 'HR'), async (req, res) => {
+// GET /api/employees — Lấy danh sách nhân viên
+// Admin/HR: tất cả, Manager: phòng mình
+router.get('/', authenticate, requirePermission('employees.view_all', 'employees.view_department'), async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT u.id, u.full_name, u.email, u.start_date,
-              r.name AS role,
-              d.name AS department
-       FROM users u
-       JOIN roles r ON u.role_id = r.id
-       LEFT JOIN departments d ON u.department_id = d.id
-       ORDER BY u.id`
-    );
+    const canViewAll = req.userPermissions.includes('employees.view_all');
+
+    let query, params;
+    if (canViewAll) {
+      query = `SELECT u.id, u.full_name, u.email, u.start_date, u.phone, u.gender,
+                      r.name AS role, u.department_id,
+                      d.name AS department
+               FROM users u
+               JOIN roles r ON u.role_id = r.id
+               LEFT JOIN departments d ON u.department_id = d.id
+               ORDER BY u.id`;
+      params = [];
+    } else {
+      // Manager: chỉ xem nhân viên phòng mình
+      query = `SELECT u.id, u.full_name, u.email, u.start_date, u.phone, u.gender,
+                      r.name AS role, u.department_id,
+                      d.name AS department
+               FROM users u
+               JOIN roles r ON u.role_id = r.id
+               LEFT JOIN departments d ON u.department_id = d.id
+               WHERE u.department_id = ?
+               ORDER BY u.id`;
+      params = [req.user.department_id];
+    }
+
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (error) {
     console.error('Get employees error:', error);

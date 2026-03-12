@@ -6,6 +6,11 @@ const authRoutes = require('./routes/auth');
 const employeeRoutes = require('./routes/employees');
 const departmentRoutes = require('./routes/departments');
 const leaveRoutes = require('./routes/leaves');
+const profileRoutes = require('./routes/profile');
+const contractRoutes = require('./routes/contracts');
+const workHistoryRoutes = require('./routes/workHistory');
+const documentRoutes = require('./routes/documents');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -24,6 +29,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/contracts', contractRoutes);
+app.use('/api/work-history', workHistoryRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/', (req, res) => {

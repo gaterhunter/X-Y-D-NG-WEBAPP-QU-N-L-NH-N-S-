@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function EmployeesPage() {
+  const { user } = useAuth();
+  const isAdminHR = ['Admin', 'HR'].includes(user.role);
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', role_id: 3, department_id: '', start_date: '' });
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', role_id: 4, department_id: '', start_date: '' });
 
   const fetchData = async () => {
     const [empRes, deptRes] = await Promise.all([api.get('/employees'), api.get('/departments')]);
@@ -18,7 +21,7 @@ export default function EmployeesPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ full_name: '', email: '', password: '', role_id: 3, department_id: '', start_date: '' });
+    setForm({ full_name: '', email: '', password: '', role_id: 4, department_id: '', start_date: '' });
     setShowModal(true);
   };
 
@@ -28,7 +31,7 @@ export default function EmployeesPage() {
       full_name: emp.full_name,
       email: emp.email,
       password: '',
-      role_id: emp.role === 'Admin' ? 1 : emp.role === 'HR' ? 2 : 3,
+      role_id: emp.role === 'Admin' ? 1 : emp.role === 'HR' ? 2 : emp.role === 'Manager' ? 3 : 4,
       department_id: emp.department_id || '',
       start_date: emp.start_date?.split('T')[0] || '',
     });
@@ -55,7 +58,7 @@ export default function EmployeesPage() {
   };
 
   const roleBadge = (role) => {
-    const colors = { Admin: 'bg-red-100 text-red-700', HR: 'bg-purple-100 text-purple-700', Employee: 'bg-blue-100 text-blue-700' };
+    const colors = { Admin: 'bg-red-100 text-red-700', HR: 'bg-purple-100 text-purple-700', Manager: 'bg-indigo-100 text-indigo-700', Employee: 'bg-blue-100 text-blue-700' };
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[role] || 'bg-gray-100'}`}>{role}</span>;
   };
 
@@ -63,9 +66,11 @@ export default function EmployeesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Quản lý Nhân viên</h1>
-        <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer">
-          + Thêm nhân viên
-        </button>
+        {isAdminHR && (
+          <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer">
+            + Thêm nhân viên
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -77,7 +82,7 @@ export default function EmployeesPage() {
               <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Phòng ban</th>
               <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Vai trò</th>
               <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Ngày vào</th>
-              <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Thao tác</th>
+              {isAdminHR && <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Thao tác</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -88,10 +93,12 @@ export default function EmployeesPage() {
                 <td className="px-6 py-4 text-gray-600">{emp.department || '—'}</td>
                 <td className="px-6 py-4">{roleBadge(emp.role)}</td>
                 <td className="px-6 py-4 text-gray-600">{new Date(emp.start_date).toLocaleDateString('vi-VN')}</td>
-                <td className="px-6 py-4 text-right space-x-2">
-                  <button onClick={() => openEdit(emp)} className="text-blue-600 hover:text-blue-800 text-sm font-medium cursor-pointer">Sửa</button>
-                  <button onClick={() => handleDelete(emp.id)} className="text-red-600 hover:text-red-800 text-sm font-medium cursor-pointer">Xóa</button>
-                </td>
+                {isAdminHR && (
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button onClick={() => openEdit(emp)} className="text-blue-600 hover:text-blue-800 text-sm font-medium cursor-pointer">Sửa</button>
+                    <button onClick={() => handleDelete(emp.id)} className="text-red-600 hover:text-red-800 text-sm font-medium cursor-pointer">Xóa</button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -117,7 +124,8 @@ export default function EmployeesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                 <option value={1}>Admin</option>
                 <option value={2}>HR</option>
-                <option value={3}>Employee</option>
+                <option value={3}>Manager</option>
+                <option value={4}>Employee</option>
               </select>
               <select value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">

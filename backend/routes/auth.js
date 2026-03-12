@@ -16,6 +16,7 @@ router.post('/login', async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT u.id, u.full_name, u.email, u.password_hash, u.department_id,
+              u.phone, u.avatar_url, u.role_id,
               r.name AS role
        FROM users u
        JOIN roles r ON u.role_id = r.id
@@ -33,11 +34,21 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng.' });
     }
 
+    // Load permissions for this role
+    const [permRows] = await pool.query(
+      `SELECT p.code FROM permissions p
+       JOIN role_permissions rp ON p.id = rp.permission_id
+       WHERE rp.role_id = ?`,
+      [user.role_id]
+    );
+    const permissions = permRows.map((r) => r.code);
+
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
         role: user.role,
+        role_id: user.role_id,
         department_id: user.department_id,
       },
       process.env.JWT_SECRET,
@@ -52,7 +63,9 @@ router.post('/login', async (req, res) => {
         full_name: user.full_name,
         email: user.email,
         role: user.role,
+        role_id: user.role_id,
         department_id: user.department_id,
+        permissions,
       },
     });
   } catch (error) {

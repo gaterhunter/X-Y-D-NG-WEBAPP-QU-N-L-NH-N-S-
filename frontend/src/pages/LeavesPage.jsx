@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LeavesPage() {
   const { user } = useAuth();
-  const isManager = ['Admin', 'HR'].includes(user.role);
+  const isManager = ['Admin', 'HR', 'Manager'].includes(user.role);
   const [leaves, setLeaves] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ start_date: '', end_date: '', reason: '' });

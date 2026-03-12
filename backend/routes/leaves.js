@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../config/db');
-const { authenticate, authorize } = require('../middlewares/auth');
+const { authenticate, authorize, requirePermission } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -50,18 +50,35 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
-// GET /api/leaves — HR/Admin xem toàn bộ yêu cầu nghỉ phép
-router.get('/', authenticate, authorize('Admin', 'HR'), async (req, res) => {
+// GET /api/leaves — Xem yêu cầu nghỉ phép (Admin/HR: all, Manager: department)
+router.get('/', authenticate, requirePermission('leaves.view_all', 'leaves.view_department'), async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT lr.id, lr.start_date, lr.end_date, lr.reason, lr.status,
-              u.id AS user_id, u.full_name, u.email,
-              d.name AS department
-       FROM leave_requests lr
-       JOIN users u ON lr.user_id = u.id
-       LEFT JOIN departments d ON u.department_id = d.id
-       ORDER BY lr.start_date DESC`
-    );
+    const canViewAll = req.userPermissions.includes('leaves.view_all');
+
+    let query, params;
+    if (canViewAll) {
+      query = `SELECT lr.id, lr.start_date, lr.end_date, lr.reason, lr.status,
+                      u.id AS user_id, u.full_name, u.email,
+                      d.name AS department
+               FROM leave_requests lr
+               JOIN users u ON lr.user_id = u.id
+               LEFT JOIN departments d ON u.department_id = d.id
+               ORDER BY lr.start_date DESC`;
+      params = [];
+    } else {
+      // Manager: chỉ xem đơn của phòng mình
+      query = `SELECT lr.id, lr.start_date, lr.end_date, lr.reason, lr.status,
+                      u.id AS user_id, u.full_name, u.email,
+                      d.name AS department
+               FROM leave_requests lr
+               JOIN users u ON lr.user_id = u.id
+               LEFT JOIN departments d ON u.department_id = d.id
+               WHERE u.department_id = ?
+               ORDER BY lr.start_date DESC`;
+      params = [req.user.department_id];
+    }
+
+    const [rows] = await pool.query(query, params);
     res.json(rows);
   } catch (error) {
     console.error('Get all leaves error:', error);
@@ -69,8 +86,8 @@ router.get('/', authenticate, authorize('Admin', 'HR'), async (req, res) => {
   }
 });
 
-// PUT /api/leaves/:id/status — HR/Admin duyệt hoặc từ chối đơn nghỉ
-router.put('/:id/status', authenticate, authorize('Admin', 'HR'), async (req, res) => {
+// PUT /api/leaves/:id/status — Duyệt hoặc từ chối đơn nghỉ
+router.put('/:id/status', authenticate, requirePermission('leaves.approve'), async (req, res) => {
   try {
     const leaveId = Number(req.params.id);
     const { status } = req.body;
@@ -80,7 +97,7 @@ router.put('/:id/status', authenticate, authorize('Admin', 'HR'), async (req, re
     }
 
     const [existing] = await pool.query(
-      'SELECT id, status FROM leave_requests WHERE id = ?',
+      'SELECT lr.id, lr.status, lr.user_id, u.department_id FROM leave_requests lr JOIN users u ON lr.user_id = u.id WHERE lr.id = ?',
       [leaveId]
     );
 
@@ -92,9 +109,14 @@ router.put('/:id/status', authenticate, authorize('Admin', 'HR'), async (req, re
       return res.status(400).json({ message: 'Chỉ có thể duyệt đơn đang ở trạng thái Pending.' });
     }
 
+    // Manager chỉ duyệt đơn của phòng mình
+    if (req.user.role === 'Manager' && existing[0].department_id !== req.user.department_id) {
+      return res.status(403).json({ message: 'Bạn chỉ có quyền duyệt đơn của phòng mình.' });
+    }
+
     await pool.query(
-      'UPDATE leave_requests SET status = ? WHERE id = ?',
-      [status, leaveId]
+      'UPDATE leave_requests SET status = ?, approved_by = ? WHERE id = ?',
+      [status, req.user.id, leaveId]
     );
 
     res.json({
