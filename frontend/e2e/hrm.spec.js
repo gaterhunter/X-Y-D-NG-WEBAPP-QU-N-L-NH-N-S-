@@ -123,3 +123,55 @@ test.describe('Đăng xuất', () => {
     await expect(page.getByPlaceholder('you@company.com')).toBeVisible();
   });
 });
+
+// ===== HỒ SƠ CÁ NHÂN =====
+test.describe('Hồ sơ cá nhân (Profile)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('you@company.com').fill('admin@company.com');
+    await page.getByPlaceholder('••••••••').fill('password123');
+    await page.getByRole('button', { name: 'Đăng nhập' }).click();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  });
+
+  test('Xem hồ sơ cá nhân', async ({ page }) => {
+    await page.getByRole('link', { name: 'Hồ sơ cá nhân' }).click();
+    await expect(page.getByRole('heading', { name: 'Hồ sơ cá nhân' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Nguyễn Văn An' })).toBeVisible();
+    await expect(page.getByText('admin@company.com')).toBeVisible();
+  });
+});
+
+// ===== HỢP ĐỒNG =====
+test.describe('Quản lý Hợp đồng (Admin)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('you@company.com').fill('admin@company.com');
+    await page.getByPlaceholder('••••••••').fill('password123');
+    await page.getByRole('button', { name: 'Đăng nhập' }).click();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  });
+
+  test('Xem danh sách hợp đồng', async ({ page }) => {
+    await page.getByRole('link', { name: 'Hợp đồng' }).click();
+    await expect(page.getByRole('heading', { name: 'Quản lý Hợp đồng' })).toBeVisible();
+    // Phải có nút tạo hợp đồng (Admin/HR)
+    await expect(page.getByRole('button', { name: '+ Tạo hợp đồng' })).toBeVisible();
+  });
+});
+
+// ===== THÔNG BÁO =====
+test.describe('Thông báo (Notifications)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('you@company.com').fill('dung@company.com');
+    await page.getByPlaceholder('••••••••').fill('password123');
+    await page.getByRole('button', { name: 'Đăng nhập' }).click();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+  });
+
+  test('Xem danh sách thông báo', async ({ page }) => {
+    await page.getByRole('link', { name: 'Thông báo' }).click();
+    await expect(page.getByRole('heading', { name: /Thông báo/ })).toBeVisible();
+  });
+});
