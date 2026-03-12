@@ -11,6 +11,7 @@ const contractRoutes = require('./routes/contracts');
 const workHistoryRoutes = require('./routes/workHistory');
 const documentRoutes = require('./routes/documents');
 const notificationRoutes = require('./routes/notifications');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/contracts', contractRoutes);
 app.use('/api/work-history', workHistoryRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/', (req, res) => {
